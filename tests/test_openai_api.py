@@ -4,7 +4,7 @@ Test script to verify OpenAI API works with corrected tool format
 """
 import sys
 import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from diagnostics.agent import run_agent
 from diagnostics.config import settings

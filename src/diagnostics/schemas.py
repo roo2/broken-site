@@ -12,6 +12,7 @@ class Issue(BaseModel):
     severity: Literal["info","low","medium","high"]
     evidence: str | Dict[str, Any]  # Allow both string and dict for evidence
     recommended_fix: str
+    hosting_provider: Optional[Dict[str, Any]] = None  # Hosting provider info if relevant
 
 class Artifact(BaseModel):
     screenshots: List[str] = []

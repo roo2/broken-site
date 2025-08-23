@@ -4,7 +4,7 @@ from typing import Dict, Any, List
 from openai import OpenAI
 from .config import settings
 from .schemas import DiagnosticReport, Issue
-from .tools import dns_lookup, tls_probe, http_check
+from .tools import dns_lookup, tls_probe, http_check, hosting_provider_detect
 
 logger = logging.getLogger(__name__)
 
@@ -61,13 +61,36 @@ TOOLS = [
                 "required": ["host"]
             }
         }
-    }
+    },
+            {
+                "type": "function",
+                "function": {
+                    "name": "hosting_provider_detect",
+                    "description": "Detect hosting provider based on DNS records and TLS certificate information, providing specific instructions and dashboard links",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "domain": {"type": "string"},
+                            "dns_records": {
+                                "type": "object",
+                                "description": "DNS records from dns_lookup function (optional)"
+                            },
+                            "tls_info": {
+                                "type": "object",
+                                "description": "TLS certificate information from tls_probe function (optional)"
+                            }
+                        },
+                        "required": ["domain"]
+                    }
+                }
+            }
 ]
 
 FUNCTIONS = {
     "dns_lookup": dns_lookup,
     "http_check": http_check,
     "tls_probe": tls_probe,
+    "hosting_provider_detect": hosting_provider_detect,
 }
 
 def run_agent(target: str) -> DiagnosticReport:
@@ -84,12 +107,36 @@ def run_agent(target: str) -> DiagnosticReport:
     # Initialize messages for Chat Completions API
     messages = [{
         "role": "user", 
-        "content": f"""Diagnose the target "{target}" and focus ONLY on issues that would make the site "broken" for users.
+        "content": f"""You are a helpful website diagnostic assistant. Diagnose the target "{target}" and provide clear, actionable guidance.
 
-Return a structured JSON report with:
-- summary (string) - focus on critical issues that prevent site access,
-- issues (list of objects: id, category in ["DNS","TLS","HTTP","Network","Content"], severity in ["medium","high"], evidence, recommended_fix),
-- artifacts.raw_samples containing raw tool outputs.
+IMPORTANT INSTRUCTIONS:
+1. Focus ONLY on issues that would make the site "broken" for users (prevent access or core functionality)
+2. ALWAYS run hosting_provider_detect when you find issues - this provides specific instructions for the user's hosting provider and certificate management method
+3. Provide clear, step-by-step instructions that non-technical users can follow
+4. Include specific dashboard links and support contacts when available
+5. When certificate issues are found, the hosting provider detection will automatically determine if it's managed by AWS Certificate Manager or Certbot/Let's Encrypt
+
+Return your findings in clear, well-formatted markdown. Structure your response with:
+
+## Summary
+A clear explanation of the main issue preventing site access (if any issues found) or confirmation that the site is working properly.
+
+## Issues Found
+List any critical issues that would prevent users from accessing the site. For each issue:
+- **Issue Type**: What kind of problem it is
+- **Severity**: How critical the issue is
+- **Explanation**: What this means in simple terms
+- **Detailed Steps to Fix**: Step-by-step instructions with specific actions
+
+## Recommendations
+Provide comprehensive, detailed instructions for fixing any issues found. Include:
+- Specific hosting provider dashboard links
+- Exact menu paths and button names
+- Support contact information
+- Alternative solutions if available
+- Troubleshooting steps
+
+If no issues are found, provide basic maintenance tips and best practices.
 
 CRITICAL: Only report issues that would prevent users from accessing or using the site. Ignore:
 - Security headers (these don't break the site)
@@ -97,18 +144,35 @@ CRITICAL: Only report issues that would prevent users from accessing or using th
 - Minor configuration issues
 
 Focus on:
-- DNS resolution failures
-- HTTP server errors (4xx, 5xx)
-- TLS certificate problems
+- DNS resolution failures (domain doesn't resolve)
+- HTTP server errors (4xx, 5xx status codes)
+- TLS certificate problems (expired, invalid, or missing certificates)
 - Network connectivity issues
 - Content loading problems
 
-Steps:
-1) Run dns_lookup on the domain.
-2) Run http_check on https://{domain} (unless target is an explicit URL, then use it).
-3) Run tls_probe on the domain.
+DIAGNOSTIC STEPS:
+1) Run dns_lookup on the domain "{domain}" to check if it resolves
+2) Run http_check on https://{domain} (or the explicit URL if provided) to test website accessibility
+3) Run tls_probe on the domain "{domain}" to check SSL certificate status
+4) If ANY issues are found, run hosting_provider_detect with the domain "{domain}" to get provider-specific instructions
 
-Then synthesize findings into issues, focusing ONLY on what would make the site "broken" for users."""
+IMPORTANT: Always use the full domain "{domain}" (including any subdomains) when calling tools. Do not strip subdomains or use the root domain.
+
+HELPFUL GUIDANCE REQUIREMENTS:
+- For each issue, provide DETAILED, step-by-step instructions that a non-technical user can follow
+- Include specific hosting provider dashboard links when available
+- Mention support contact information when relevant
+- Explain what each issue means in simple terms
+- Provide alternative solutions when possible
+- If the site is working fine, clearly state that and provide basic maintenance tips
+- ALWAYS provide comprehensive, detailed instructions - don't be brief or vague
+- Include specific menu paths, button names, and exact steps to follow
+- Mention any important settings or options the user should look for
+- Provide troubleshooting steps if the main solution doesn't work
+
+Example detailed response: "Your website is down because the domain has expired. Here's exactly how to fix it: 1) Open your web browser and go to [dashboard link], 2) Click 'Sign In' in the top right corner, 3) Enter your email and password, 4) Once logged in, click 'Domains' in the main menu, 5) Find your domain name in the list and click on it, 6) Look for the 'Renew Domain' button (usually green) and click it, 7) Select the renewal period (1-10 years) and click 'Continue', 8) Review the pricing and click 'Complete Purchase', 9) Enter your payment information and click 'Submit Order'. If you can't find the renew button or need help, call GoDaddy support at [support link] or use their live chat feature."
+
+Synthesize your findings into clear, actionable issues that focus on what would make the site "broken" for users."""
     }]
     
     logger.info(f"Creating OpenAI chat completion with model: {settings.OPENAI_MODEL}")
@@ -157,6 +221,20 @@ Then synthesize findings into issues, focusing ONLY on what would make the site 
                     if name == "dns_lookup" and "record_types" not in args:
                         args["record_types"] = ["A", "AAAA", "CNAME", "MX", "NS", "TXT"]
                         result = fn(**args)
+                    elif name == "hosting_provider_detect":
+                        # Automatically get DNS records if not provided
+                        if "dns_records" not in args:
+                            from .tools.dns_tools import dns_lookup
+                            dns_result = dns_lookup(domain=args.get("domain"), record_types=["A", "AAAA", "CNAME", "MX", "NS", "TXT"])
+                            args["dns_records"] = dns_result
+                        
+                        # Automatically get TLS info if not provided
+                        if "tls_info" not in args:
+                            from .tools.tls_tools import tls_probe
+                            tls_result = tls_probe(host=args.get("domain"))
+                            args["tls_info"] = tls_result
+                        
+                        result = fn(**args)
                     else:
                         result = fn(**args)
                     logger.info(f"Function {name} executed successfully")
@@ -175,43 +253,33 @@ Then synthesize findings into issues, focusing ONLY on what would make the site 
     final_message = messages[-1]["content"]
     logger.info("Extracting final response text from OpenAI")
     
-    # Try to parse JSON - first try direct parsing, then extract from markdown
-    try:
-        # First attempt: direct JSON parsing
-        data = json.loads(final_message)
-        logger.info("Successfully parsed JSON response from OpenAI")
-    except json.JSONDecodeError:
-        # Second attempt: extract JSON from markdown code blocks
-        import re
-        json_match = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', final_message, re.DOTALL)
-        if json_match:
-            try:
-                data = json.loads(json_match.group(1))
-                logger.info("Successfully extracted and parsed JSON from markdown response")
-            except json.JSONDecodeError as e:
-                logger.error(f"Failed to parse extracted JSON: {str(e)}")
-                logger.error(f"Extracted text: {json_match.group(1)}")
-                # Fallback minimal report
-                return DiagnosticReport(summary="Model response could not be parsed; see raw message.",
-                                        issues=[],
-                                        artifacts={"screenshots": [], "raw_samples": {"raw_model_text": final_message}})
-        else:
-            logger.error("No JSON found in markdown response")
-            logger.error(f"Raw response text: {final_message}")
-            # Fallback minimal report
-            return DiagnosticReport(summary="Model response could not be parsed; see raw message.",
-                                    issues=[],
-                                    artifacts={"screenshots": [], "raw_samples": {"raw_model_text": final_message}})
+    # Parse markdown response into structured format
+    import re
     
-    # Normalize into DiagnosticReport
-    try:
-        result = DiagnosticReport(**data)
-        logger.info("Successfully created DiagnosticReport from OpenAI response")
-        return result
-    except Exception as e:
-        logger.error(f"Failed to create DiagnosticReport from parsed data: {str(e)}", exc_info=True)
-        logger.error(f"Parsed data: {data}")
-        # Fallback minimal report
-        return DiagnosticReport(summary="Model response could not be converted to report format.",
-                                issues=[],
-                                artifacts={"screenshots": [], "raw_samples": {"raw_model_text": final_message, "parsed_data": data}})
+    # Extract sections from markdown
+    summary_match = re.search(r'## Summary\s*\n(.*?)(?=\n##|\Z)', final_message, re.DOTALL)
+    issues_match = re.search(r'## Issues Found\s*\n(.*?)(?=\n##|\Z)', final_message, re.DOTALL)
+    recommendations_match = re.search(r'## Recommendations\s*\n(.*?)(?=\n##|\Z)', final_message, re.DOTALL)
+    
+    # Extract content, stripping markdown formatting
+    summary = summary_match.group(1).strip() if summary_match else "No summary provided"
+    issues_text = issues_match.group(1).strip() if issues_match else "No issues found"
+    recommendations = recommendations_match.group(1).strip() if recommendations_match else "No recommendations provided"
+    
+    # Create a simple DiagnosticReport with the parsed markdown
+    result = DiagnosticReport(
+        summary=summary,
+        issues=[],  # We'll handle issues differently now
+        artifacts={
+            "screenshots": [],
+            "raw_samples": {
+                "raw_model_text": final_message,
+                "parsed_summary": summary,
+                "parsed_issues": issues_text,
+                "parsed_recommendations": recommendations
+            }
+        }
+    )
+    
+    logger.info("Successfully created DiagnosticReport from markdown response")
+    return result

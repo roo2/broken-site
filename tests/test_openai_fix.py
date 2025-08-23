@@ -4,7 +4,7 @@ Test script to verify OpenAI agent works with fixed tool format
 """
 import sys
 import os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
 from diagnostics.agent import TOOLS, FUNCTIONS
 from diagnostics.config import settings
@@ -79,7 +79,7 @@ def test_openai_tools():
     print(f"- Total functions: {len(FUNCTIONS)}")
     print(f"- Tool format: {'✅ Valid' if len(TOOLS) > 0 else '❌ Invalid'}")
     print(f"- Function mapping: {'✅ Complete' if not missing_functions else '❌ Incomplete'}")
-    print(f"- Focus: {'✅ Critical issues only' if len(TOOLS) == 3 else '❌ Too many tools'}")
+    print(f"- Focus: {'✅ Critical issues + hosting detection' if len(TOOLS) == 4 else '❌ Unexpected tool count'}")
 
 if __name__ == "__main__":
     test_openai_tools()

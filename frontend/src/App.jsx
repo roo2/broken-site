@@ -1,5 +1,7 @@
 import React, { useState } from 'react'
 import { Search, AlertCircle, CheckCircle, Clock, Shield, Globe, Server, Mail, AlertTriangle, Info, Brain, Zap } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import './App.scss'
 
 function App() {
@@ -179,32 +181,85 @@ function App() {
                 <div className="status-content">
                   <h2>Diagnostic Results</h2>
                   
-                  <div className="summary-section">
-                    <h3>Summary</h3>
-                    <p>{result.summary}</p>
-                  </div>
-                  
-                  <div className="details-section">
-                    <h3>Details</h3>
-                    <div className="details-content">
-                      {result.details.split('\n').map((line, index) => (
-                        <p key={index} className={line.startsWith('✅') ? 'success-line' : line.startsWith('🔴') ? 'error-line' : line.startsWith('🟡') ? 'warning-line' : line.startsWith('🟢') ? 'info-line' : 'normal-line'}>
-                          {line}
-                        </p>
-                      ))}
+                  {result.mode === 'openai' ? (
+                    // OpenAI mode: Render markdown
+                    <div className="markdown-content">
+                      <ReactMarkdown 
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          h1: ({node, ...props}) => <h1 className="markdown-h1" {...props} />,
+                          h2: ({node, ...props}) => <h2 className="markdown-h2" {...props} />,
+                          h3: ({node, ...props}) => <h3 className="markdown-h3" {...props} />,
+                          p: ({node, ...props}) => <p className="markdown-p" {...props} />,
+                          ul: ({node, ...props}) => <ul className="markdown-ul" {...props} />,
+                          ol: ({node, ...props}) => <ol className="markdown-ol" {...props} />,
+                          li: ({node, ...props}) => <li className="markdown-li" {...props} />,
+                          strong: ({node, ...props}) => <strong className="markdown-strong" {...props} />,
+                          em: ({node, ...props}) => <em className="markdown-em" {...props} />,
+                          code: ({node, ...props}) => <code className="markdown-code" {...props} />,
+                          a: ({node, ...props}) => <a className="markdown-link" target="_blank" rel="noopener noreferrer" {...props} />,
+                        }}
+                      >
+                        {result.details}
+                      </ReactMarkdown>
                     </div>
-                  </div>
-                  
-                  <div className="recommendations-section">
-                    <h3>Recommendations</h3>
-                    <div className="recommendations-content">
-                      {result.recommendations.split('\n').map((line, index) => (
-                        <p key={index} className={line.startsWith('🎉') ? 'success-line' : 'normal-line'}>
-                          {line}
-                        </p>
-                      ))}
-                    </div>
-                  </div>
+                  ) : (
+                    // Offline mode: Use structured format
+                    <>
+                      <div className="summary-section">
+                        <h3>Summary</h3>
+                        <p>{result.summary}</p>
+                      </div>
+                      
+                      <div className="details-section">
+                        <h3>Details</h3>
+                        <div className="details-content">
+                          {result.details.split('\n').map((line, index) => (
+                            <p key={index} className={line.startsWith('✅') ? 'success-line' : line.startsWith('🔴') ? 'error-line' : line.startsWith('🟡') ? 'warning-line' : line.startsWith('🟢') ? 'info-line' : 'normal-line'}>
+                              {line}
+                            </p>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      <div className="recommendations-section">
+                        <h3>Recommendations</h3>
+                        <div className="recommendations-content">
+                          {result.recommendations.split('\n').map((line, index) => {
+                            // Skip empty lines and "Recommendations:" header
+                            if (!line.trim() || line === 'Recommendations:') return null;
+                            
+                            // Handle different line types
+                            let className = 'normal-line';
+                            let displayText = line;
+                            
+                            if (line.startsWith('🎉')) {
+                              className = 'success-line';
+                            } else if (line.startsWith('🏢') || line.startsWith('🔗') || line.startsWith('📋') || line.startsWith('🆘')) {
+                              className = 'info-line';
+                            } else if (line.match(/^\d+\./)) {
+                              // Check if this is the first numbered step
+                              const isFirstStep = index > 0 && result.recommendations.split('\n').slice(0, index).every(l => !l.trim() || l === 'Recommendations:');
+                              
+                              if (isFirstStep) {
+                                // Remove the numbering from the first step
+                                displayText = line.replace(/^\d+\.\s*/, '');
+                                className = 'recommendation-intro';
+                              } else {
+                                className = 'recommendation-step';
+                              }
+                            }
+                            
+                            return (
+                              <p key={index} className={className}>
+                                {displayText}
+                              </p>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </>
+                  )}
                   
                   <div className="mode-info">
                     <small>Analysis mode: {result.mode === 'openai' ? 'AI-Powered' : 'Fast Check'}</small>

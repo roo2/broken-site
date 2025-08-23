@@ -282,6 +282,22 @@
         &.normal-line {
           color: var(--text-secondary);
         }
+        
+        &.recommendation-step {
+          color: var(--text-primary);
+          font-weight: 500;
+          margin: 1rem 0 0.5rem;
+          padding-left: 0.5rem;
+          border-left: 3px solid var(--primary-color);
+        }
+        
+        &.recommendation-intro {
+          color: var(--text-primary);
+          font-weight: 700;
+          font-size: 1.3rem;
+          margin: 1.5rem 0 1rem;
+          line-height: 1.5;
+        }
       }
     }
   }
@@ -295,6 +311,82 @@
     small {
       color: var(--text-muted);
       font-size: 0.875rem;
+    }
+  }
+  
+  // Markdown Content Styling
+  .markdown-content {
+    text-align: left;
+    
+    .markdown-h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin: 1.5rem 0 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--primary-color);
+    }
+    
+    .markdown-h2 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin: 1.25rem 0 0.75rem;
+      padding-bottom: 0.25rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
+    .markdown-h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin: 1rem 0 0.5rem;
+    }
+    
+    .markdown-p {
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin: 0.75rem 0;
+    }
+    
+    .markdown-ul, .markdown-ol {
+      margin: 0.75rem 0;
+      padding-left: 1.5rem;
+    }
+    
+    .markdown-li {
+      color: var(--text-secondary);
+      line-height: 1.6;
+      margin: 0.25rem 0;
+    }
+    
+    .markdown-strong {
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+    
+    .markdown-em {
+      font-style: italic;
+      color: var(--text-secondary);
+    }
+    
+    .markdown-code {
+      background: var(--bg-secondary);
+      padding: 0.125rem 0.25rem;
+      border-radius: 4px;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 0.875rem;
+      color: var(--text-primary);
+    }
+    
+    .markdown-link {
+      color: var(--primary-color);
+      text-decoration: none;
+      font-weight: 500;
+      
+      &:hover {
+        text-decoration: underline;
+      }
     }
   }
 }
