@@ -34,54 +34,8 @@
 
 // Diagnosis Form
 .diagnosis-form {
-  max-width: 600px;
+  max-width: 1000px;
   margin: 0 auto 3rem;
-  
-  .mode-toggle {
-    display: flex;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-    justify-content: center;
-    
-    .mode-label {
-      display: flex;
-      align-items: center;
-      cursor: pointer;
-      
-      input[type="radio"] {
-        display: none;
-      }
-      
-      .mode-option {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.75rem 1.5rem;
-        border: 2px solid var(--border-color);
-        border-radius: var(--border-radius);
-        background: var(--bg-primary);
-        color: var(--text-secondary);
-        font-weight: 500;
-        transition: var(--transition);
-        
-        &:hover {
-          border-color: var(--primary-color);
-          color: var(--text-primary);
-        }
-      }
-      
-      input[type="radio"]:checked + .mode-option {
-        border-color: var(--primary-color);
-        background: var(--primary-color);
-        color: white;
-      }
-      
-      input[type="radio"]:disabled + .mode-option {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-    }
-  }
   
   .input-group {
     display: flex;
@@ -98,17 +52,14 @@
     }
   }
   
-  .search-icon {
-    padding: 1rem 1.25rem;
-    color: var(--text-muted);
-    flex-shrink: 0;
-  }
-  
   .url-input {
     flex: 1;
-    padding: 1rem 0;
-    font-size: 1rem;
+    padding: 1.5rem 1.5rem;
+    font-size: 1.125rem;
     color: var(--text-primary);
+    border: none;
+    outline: none;
+    background: transparent;
     
     &::placeholder {
       color: var(--text-muted);
@@ -120,25 +71,50 @@
     }
   }
   
-  .submit-btn {
-    background: var(--primary-color);
-    color: white;
-    padding: 1rem 2rem;
-    font-size: 1rem;
-    font-weight: 600;
-    border-radius: 0;
-    transition: var(--transition);
+  .button-group {
     display: flex;
-    align-items: center;
-    gap: 0.5rem;
+    flex-direction: row;
     
-    &:hover:not(:disabled) {
-      background: var(--primary-hover);
-    }
-    
-    &:disabled {
-      background: var(--text-muted);
-      cursor: not-allowed;
+    .submit-btn {
+      padding: 1.5rem 2rem;
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      cursor: pointer;
+      
+      &.primary {
+        background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-hover) 100%);
+        color: white;
+        
+        &:hover:not(:disabled) {
+          background: var(--primary-hover);
+        }
+        
+        &:disabled {
+          background: var(--text-muted);
+          cursor: not-allowed;
+        }
+      }
+      
+      &.secondary {
+        background: var(--bg-secondary);
+        color: var(--text-secondary);
+        border-right: 1px solid var(--border-color);
+        
+        &:hover:not(:disabled) {
+          background: var(--border-color);
+          color: var(--text-primary);
+        }
+        
+        &:disabled {
+          background: var(--bg-tertiary);
+          color: var(--text-muted);
+          cursor: not-allowed;
+        }
+      }
     }
   }
 }
@@ -159,19 +135,7 @@
   margin-right: auto;
 }
 
-// Mode Info
-.mode-info {
-  max-width: 600px;
-  margin: 0 auto 2rem;
-  text-align: center;
-  
-  p {
-    color: var(--text-secondary);
-    font-size: 0.875rem;
-    line-height: 1.6;
-    margin: 0;
-  }
-}
+
 
 // Results
 .results {
@@ -209,7 +173,7 @@
   }
   
   .status-content {
-    padding: 0 2rem 2rem;
+    padding: 2rem 2rem;
     text-align: left;
     
     h2 {
@@ -466,15 +430,6 @@
   .diagnosis-form {
     margin-bottom: 2rem;
     
-    .mode-toggle {
-      flex-direction: column;
-      gap: 0.75rem;
-      
-      .mode-label {
-        justify-content: center;
-      }
-    }
-    
     .input-group {
       flex-direction: column;
       
@@ -483,11 +438,25 @@
       }
       
       .url-input {
-        padding: 1rem 1.25rem;
+        padding: 1.25rem 1.5rem;
       }
       
-      .submit-btn {
-        border-radius: 0 0 var(--border-radius-lg) var(--border-radius-lg);
+      .button-group {
+        flex-direction: row;
+        
+        .submit-btn {
+          flex: 1;
+          border-radius: 0;
+          
+          &.secondary {
+            border-radius: 0 0 0 var(--border-radius-lg);
+            border-right: 1px solid var(--border-color);
+          }
+          
+          &.primary {
+            border-radius: 0 0 var(--border-radius-lg) 0;
+          }
+        }
       }
     }
   }

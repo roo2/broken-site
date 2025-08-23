@@ -3,7 +3,7 @@
 # Start both backend and frontend development servers
 # Usage: ./start-dev.sh
 
-echo "🚀 Starting Site Diagnostics Pro Development Environment"
+echo "🚀 Starting BrokenSite Development Environment"
 echo ""
 
 # Check if virtual environment exists

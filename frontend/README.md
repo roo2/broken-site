@@ -1,6 +1,6 @@
-# Site Diagnostics Pro - Frontend
+# BrokenSite - Frontend
 
-A modern React frontend for the Site Diagnostics Pro web application. Built with Vite, SCSS, and modern React patterns.
+A modern React frontend for the BrokenSite web application. Built with Vite, SCSS, and modern React patterns.
 
 ## Features
 

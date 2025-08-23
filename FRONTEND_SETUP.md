@@ -1,6 +1,6 @@
 # Frontend Setup Complete! 🎉
 
-Your modern React frontend for Site Diagnostics Pro is now ready! Here's what has been created:
+Your modern React frontend for BrokenSite is now ready! Here's what has been created:
 
 ## ✨ Features Implemented
 

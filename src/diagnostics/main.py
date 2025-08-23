@@ -17,7 +17,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 logger.setLevel(getattr(logging, log_level, logging.ERROR))
 
-app = FastAPI(title="Site Diagnostics Pro", version="0.1.0")
+app = FastAPI(title="BrokenSite", version="0.1.0")
 
 @app.get("/healthz")
 def health():

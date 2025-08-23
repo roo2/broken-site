@@ -1,6 +1,6 @@
 # Test Scripts
 
-This directory contains test scripts for the Site Diagnostics Pro application.
+This directory contains test scripts for the BrokenSite application.
 
 ## Test Sites
 

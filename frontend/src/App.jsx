@@ -91,47 +91,15 @@ function App() {
     <div className="app">
       <header className="header">
         <div className="container">
-          <h1>Site Diagnostics Pro</h1>
-          <p>Simple website health checks for everyone</p>
+          <h1>BrokenSite</h1>
+          <p>Quickly diagnose and fix your broken site using our powerful AI assistant.</p>
         </div>
       </header>
 
       <main className="main">
         <div className="container">
           <form onSubmit={handleSubmit} className="diagnosis-form">
-            <div className="mode-toggle">
-              <label className="mode-label">
-                <input
-                  type="radio"
-                  name="mode"
-                  value="openai"
-                  checked={diagnosisMode === 'openai'}
-                  onChange={(e) => setDiagnosisMode(e.target.value)}
-                  disabled={isLoading}
-                />
-                <span className="mode-option">
-                  <Brain size={16} />
-                  AI-Powered (Recommended)
-                </span>
-              </label>
-              <label className="mode-label">
-                <input
-                  type="radio"
-                  name="mode"
-                  value="offline"
-                  checked={diagnosisMode === 'offline'}
-                  onChange={(e) => setDiagnosisMode(e.target.value)}
-                  disabled={isLoading}
-                />
-                <span className="mode-option">
-                  <Zap size={16} />
-                  Fast Check
-                </span>
-              </label>
-            </div>
-            
             <div className="input-group">
-              <Search className="search-icon" size={20} />
               <input
                 type="text"
                 value={url}
@@ -140,23 +108,44 @@ function App() {
                 className="url-input"
                 disabled={isLoading}
               />
-              <button 
-                type="submit" 
-                className="submit-btn"
-                disabled={isLoading || !url.trim()}
-              >
-                {isLoading ? (
-                  <>
-                    <Clock size={16} />
-                    {diagnosisMode === 'openai' ? 'AI Analyzing...' : 'Checking...'}
-                  </>
-                ) : (
-                  <>
-                    <Search size={16} />
-                    Check Website
-                  </>
-                )}
-              </button>
+              <div className="button-group">
+                <button 
+                  type="submit" 
+                  className="submit-btn secondary"
+                  disabled={isLoading || !url.trim()}
+                  onClick={() => setDiagnosisMode('offline')}
+                >
+                  {isLoading && diagnosisMode === 'offline' ? (
+                    <>
+                      <Clock size={18} />
+                      Checking...
+                    </>
+                  ) : (
+                    <>
+                      <Zap size={18} />
+                      Fast Check
+                    </>
+                  )}
+                </button>
+                <button 
+                  type="submit" 
+                  className="submit-btn primary"
+                  disabled={isLoading || !url.trim()}
+                  onClick={() => setDiagnosisMode('openai')}
+                >
+                  {isLoading && diagnosisMode === 'openai' ? (
+                    <>
+                      <Clock size={18} />
+                      AI Analyzing...
+                    </>
+                  ) : (
+                    <>
+                      <Brain size={18} />
+                      AI-Powered Check
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </form>
 
@@ -167,13 +156,7 @@ function App() {
             </div>
           )}
 
-          <div className="mode-info">
-            <p>
-              <strong>AI-Powered:</strong> Uses advanced AI to provide detailed analysis and recommendations.
-              <br />
-              <strong>Fast Check:</strong> Quick automated checks for common issues.
-            </p>
-          </div>
+
 
           {result && (
             <div className="results">
@@ -292,7 +275,7 @@ function App() {
 
       <footer className="footer">
         <div className="container">
-          <p>&copy; 2024 Site Diagnostics Pro. Built for everyone, not just tech experts.</p>
+          <p>&copy; 2024 BrokenSite. Built for everyone, not just tech experts.</p>
         </div>
       </footer>
     </div>

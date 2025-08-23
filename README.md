@@ -1,4 +1,4 @@
-# Site Diagnostics Pro (Python)
+# BrokenSite (Python)
 
 An initial project framework for an AI-powered website diagnostics assistant that checks DNS, TLS/SSL, HTTP response chains, and common security headers. Comes with:
 - FastAPI service (`/diagnose` endpoint)

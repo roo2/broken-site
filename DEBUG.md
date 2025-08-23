@@ -1,6 +1,6 @@
 # Debugging Guide
 
-This guide explains how to debug the Site Diagnostics Pro project using VS Code or Cursor.
+This guide explains how to debug the BrokenSite project using VS Code or Cursor.
 
 ## Launch Configurations
 
