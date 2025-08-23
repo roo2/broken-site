@@ -4,7 +4,7 @@ from typing import Dict, Any, List
 from openai import OpenAI
 from .config import settings
 from .schemas import DiagnosticReport, Issue
-from .tools import dns_lookup, tls_probe, http_check, hosting_provider_detect
+from .tools import dns_lookup, tls_probe, http_check, hosting_provider_detect, take_screenshot_sync
 
 logger = logging.getLogger(__name__)
 
@@ -65,25 +65,42 @@ TOOLS = [
             {
                 "type": "function",
                 "function": {
-                    "name": "hosting_provider_detect",
-                    "description": "Detect hosting provider based on DNS records and TLS certificate information, providing specific instructions and dashboard links",
+                    "name": "take_screenshot_sync",
+                    "description": "Analyze a website for visual issues, rendering problems, JavaScript errors, or broken content using browser automation.",
                     "parameters": {
                         "type": "object",
                         "properties": {
-                            "domain": {"type": "string"},
-                            "dns_records": {
-                                "type": "object",
-                                "description": "DNS records from dns_lookup function (optional)"
-                            },
-                            "tls_info": {
-                                "type": "object",
-                                "description": "TLS certificate information from tls_probe function (optional)"
-                            }
+                            "url": {"type": "string", "description": "The URL to analyze"},
+                            "width": {"type": "integer", "default": 1280, "description": "Viewport width"},
+                            "height": {"type": "integer", "default": 720, "description": "Viewport height"},
+                            "timeout": {"type": "integer", "default": 30000, "description": "Timeout in milliseconds"}
                         },
-                        "required": ["domain"]
+                        "required": ["url"]
                     }
                 }
+            },
+    {
+        "type": "function",
+        "function": {
+            "name": "hosting_provider_detect",
+            "description": "Detect hosting provider based on DNS records and TLS certificate information, providing specific instructions and dashboard links",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "domain": {"type": "string"},
+                    "dns_records": {
+                        "type": "object",
+                        "description": "DNS records from dns_lookup function (optional)"
+                    },
+                    "tls_info": {
+                        "type": "object",
+                        "description": "TLS certificate information from tls_probe function (optional)"
+                    }
+                },
+                "required": ["domain"]
             }
+        }
+    }
 ]
 
 FUNCTIONS = {
@@ -91,6 +108,7 @@ FUNCTIONS = {
     "http_check": http_check,
     "tls_probe": tls_probe,
     "hosting_provider_detect": hosting_provider_detect,
+    "take_screenshot_sync": take_screenshot_sync,
 }
 
 def run_agent(target: str) -> DiagnosticReport:
@@ -154,7 +172,8 @@ DIAGNOSTIC STEPS:
 1) Run dns_lookup on the domain "{domain}" to check if it resolves
 2) Run http_check on https://{domain} (or the explicit URL if provided) to test website accessibility
 3) Run tls_probe on the domain "{domain}" to check SSL certificate status
-4) If ANY issues are found, run hosting_provider_detect with the domain "{domain}" to get provider-specific instructions
+4) Run take_screenshot_sync on the domain "{domain}" to capture and analyze the rendered page and check for visual issues, rendering problems, JavaScript errors, or broken content.
+5) If ANY issues are found, run hosting_provider_detect with the domain "{domain}" to get provider-specific instructions
 
 IMPORTANT: Always use the full domain "{domain}" (including any subdomains) when calling tools. Do not strip subdomains or use the root domain.
 

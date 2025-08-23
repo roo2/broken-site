@@ -2,12 +2,23 @@
 
 This directory contains test scripts for the Site Diagnostics Pro application.
 
-## Test Files
+## Test Sites
 
+Heroku 500 error the-story-generator.com
 Wordpress 500 error in plugin sizzling-tasman.51-161-218-147.id-host.com 
+Wordpress 200 but error in div blank-sven.51-161-218-147.id-host.com
+expired domain realprofits.com
+expired certificate https://chat.therapyboard.com.au/
 
+
+Other tests todo:
+cloudflare is down ?
+DNS Misconfigured
 expired hosting
-expired domain erutestcheap.online/
+upbeat-tasman.51-161-218-147.id-host.com
+
+
+
 
 
 ### Core Functionality Tests
