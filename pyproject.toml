@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "site-diagnostics-pro"
+version = "0.1.0"
+description = "AI-powered website diagnostics (DNS, TLS, HTTP, headers)"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "fastapi>=0.115.0",
+  "uvicorn[standard]>=0.30.0",
+  "httpx>=0.27.0",
+  "dnspython>=2.6.1",
+  "pydantic>=2.7.0",
+  "python-dotenv>=1.0.1",
+  "rich>=13.7.1",
+  "certifi>=2024.2.2",
+  "cryptography>=42.0.5",
+  "python-whois>=0.9.5",
+  "OpenAI>=1.40.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["diagnostics*"]
