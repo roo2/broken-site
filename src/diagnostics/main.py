@@ -90,6 +90,7 @@ class TextualSummaryResponse(BaseModel):
     details: str
     recommendations: str
     mode: str
+    tool_data: dict = {}  # Add tool results to the response
 
 @app.post("/diagnose/textual", response_model=TextualSummaryResponse)
 def diagnose_textual(req: DiagnoseRequest, mode: str = "openai"):
@@ -117,11 +118,14 @@ def diagnose_textual(req: DiagnoseRequest, mode: str = "openai"):
             # Get the raw markdown response
             raw_samples = full_report.artifacts.raw_samples
             raw_markdown = raw_samples.get("raw_model_text", full_report.summary or "Diagnostic analysis completed.")
+            tool_results = raw_samples.get("tool_results", {})
             
             # For OpenAI mode, return the raw markdown for frontend rendering
             summary = "AI Analysis Complete"
             details = raw_markdown
             recommendations = ""  # Will be handled by frontend markdown rendering
+            # Add tool results to the response
+            tool_data = tool_results
         else:
             # Handle offline mode with the old structured format
             summary = full_report.summary or "Diagnostic analysis completed."
@@ -196,7 +200,8 @@ def diagnose_textual(req: DiagnoseRequest, mode: str = "openai"):
             summary=summary,
             details=details,
             recommendations=recommendations,
-            mode=mode
+            mode=mode,
+            tool_data=tool_data if mode == "openai" else {}
         )
         
     except HTTPException:

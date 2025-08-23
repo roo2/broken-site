@@ -32,7 +32,12 @@ def test_hosting_detection():
         {
             "domain": "chat.therapyboard.com.au",
             "description": "Therapyboard (should detect AWS)"
-        }
+        }, 
+        {
+            "domain": "sizzling-tasman.51-161-218-147.id-host.com/",
+            "description": "should not detect the provider"
+        },
+        
     ]
     
     for test_case in test_cases:

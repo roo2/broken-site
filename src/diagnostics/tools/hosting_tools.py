@@ -234,19 +234,23 @@ def hosting_provider_detect(domain: str, dns_records: Dict[str, Any] = None, tls
         if provider_id in providers and "certificate_management" in providers[provider_id]:
             cert_management_options = providers[provider_id]["certificate_management"]
             
-            # Check certificate issuer and subject
-            issuer = tls_info.get("issuer", "")
-            subject = tls_info.get("subject", "")
+            # Check certificate issuer and subject (now dictionaries)
+            issuer = tls_info.get("issuer", {})
+            subject = tls_info.get("subject", {})
+            
+            # Convert dictionaries to strings for pattern matching
+            issuer_str = " ".join(str(v) for v in issuer.values()) if isinstance(issuer, dict) else str(issuer)
+            subject_str = " ".join(str(v) for v in subject.values()) if isinstance(subject, dict) else str(subject)
             
             for cert_type, cert_info in cert_management_options.items():
                 detection = cert_info["detection"]
                 
                 # Check issuer patterns
-                issuer_match = any(re.search(pattern, issuer, re.IGNORECASE) 
+                issuer_match = any(re.search(pattern, issuer_str, re.IGNORECASE) 
                                   for pattern in detection["issuer_patterns"])
                 
                 # Check subject patterns
-                subject_match = any(re.search(pattern, subject, re.IGNORECASE) 
+                subject_match = any(re.search(pattern, subject_str, re.IGNORECASE) 
                                    for pattern in detection["subject_patterns"])
                 
                 if issuer_match or subject_match:

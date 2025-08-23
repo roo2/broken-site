@@ -183,26 +183,45 @@ function App() {
                   
                   {result.mode === 'openai' ? (
                     // OpenAI mode: Render markdown
-                    <div className="markdown-content">
-                      <ReactMarkdown 
-                        remarkPlugins={[remarkGfm]}
-                        components={{
-                          h1: ({node, ...props}) => <h1 className="markdown-h1" {...props} />,
-                          h2: ({node, ...props}) => <h2 className="markdown-h2" {...props} />,
-                          h3: ({node, ...props}) => <h3 className="markdown-h3" {...props} />,
-                          p: ({node, ...props}) => <p className="markdown-p" {...props} />,
-                          ul: ({node, ...props}) => <ul className="markdown-ul" {...props} />,
-                          ol: ({node, ...props}) => <ol className="markdown-ol" {...props} />,
-                          li: ({node, ...props}) => <li className="markdown-li" {...props} />,
-                          strong: ({node, ...props}) => <strong className="markdown-strong" {...props} />,
-                          em: ({node, ...props}) => <em className="markdown-em" {...props} />,
-                          code: ({node, ...props}) => <code className="markdown-code" {...props} />,
-                          a: ({node, ...props}) => <a className="markdown-link" target="_blank" rel="noopener noreferrer" {...props} />,
-                        }}
-                      >
-                        {result.details}
-                      </ReactMarkdown>
-                    </div>
+                    <>
+                      <div className="markdown-content">
+                        <ReactMarkdown 
+                          remarkPlugins={[remarkGfm]}
+                          components={{
+                            h1: ({node, ...props}) => <h1 className="markdown-h1" {...props} />,
+                            h2: ({node, ...props}) => <h2 className="markdown-h2" {...props} />,
+                            h3: ({node, ...props}) => <h3 className="markdown-h3" {...props} />,
+                            p: ({node, ...props}) => <p className="markdown-p" {...props} />,
+                            ul: ({node, ...props}) => <ul className="markdown-ul" {...props} />,
+                            ol: ({node, ...props}) => <ol className="markdown-ol" {...props} />,
+                            li: ({node, ...props}) => <li className="markdown-li" {...props} />,
+                            strong: ({node, ...props}) => <strong className="markdown-strong" {...props} />,
+                            em: ({node, ...props}) => <em className="markdown-em" {...props} />,
+                            code: ({node, ...props}) => <code className="markdown-code" {...props} />,
+                            a: ({node, ...props}) => <a className="markdown-link" target="_blank" rel="noopener noreferrer" {...props} />,
+                          }}
+                        >
+                          {result.details}
+                        </ReactMarkdown>
+                      </div>
+                      
+                      {/* Tool Results Section */}
+                      {result.tool_data && Object.keys(result.tool_data).length > 0 && (
+                        <div className="tool-results-section">
+                          <h3>Diagnostic Data</h3>
+                          <div className="tool-results-content">
+                            {Object.entries(result.tool_data).map(([tool_id, data], index) => (
+                              <div key={index} className="tool-result">
+                                <h4>Tool Call {index + 1}</h4>
+                                <pre className="tool-data">
+                                  {JSON.stringify(data, null, 2)}
+                                </pre>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
                   ) : (
                     // Offline mode: Use structured format
                     <>

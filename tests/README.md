@@ -4,6 +4,12 @@ This directory contains test scripts for the Site Diagnostics Pro application.
 
 ## Test Files
 
+Wordpress 500 error in plugin sizzling-tasman.51-161-218-147.id-host.com 
+
+expired hosting
+expired domain erutestcheap.online/
+
+
 ### Core Functionality Tests
 
 - **`test_app_import.py`** - Tests that the FastAPI app can be imported correctly

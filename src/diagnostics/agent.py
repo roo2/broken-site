@@ -266,6 +266,17 @@ Synthesize your findings into clear, actionable issues that focus on what would 
     issues_text = issues_match.group(1).strip() if issues_match else "No issues found"
     recommendations = recommendations_match.group(1).strip() if recommendations_match else "No recommendations provided"
     
+    # Collect all tool results from the conversation
+    tool_results = {}
+    for msg in messages:
+        if msg.get("role") == "tool":
+            try:
+                content = json.loads(msg.get("content", "{}"))
+                tool_call_id = msg.get("tool_call_id", "unknown")
+                tool_results[tool_call_id] = content
+            except:
+                pass
+    
     # Create a simple DiagnosticReport with the parsed markdown
     result = DiagnosticReport(
         summary=summary,
@@ -276,7 +287,8 @@ Synthesize your findings into clear, actionable issues that focus on what would 
                 "raw_model_text": final_message,
                 "parsed_summary": summary,
                 "parsed_issues": issues_text,
-                "parsed_recommendations": recommendations
+                "parsed_recommendations": recommendations,
+                "tool_results": tool_results
             }
         }
     )
