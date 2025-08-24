@@ -551,6 +551,12 @@ Focus on actionable insights that a non-technical user can understand and act up
                         })
                     
                     # Get the final response
+                    yield {
+                        "type": "status",
+                        "message": "Analysis complete, generating report...",
+                        "step": "generating_report"
+                    }
+                    
                     final_stream = client.responses.create(
                         model="gpt-4o-mini",
                         input=new_input,
@@ -568,18 +574,20 @@ Focus on actionable insights that a non-technical user can understand and act up
                                 final_content += final_event.delta
                                 yield {
                                     "type": "text_content",
-                                    "content": final_event.delta,
+                                    "content": final_event.delta,  # Send only the delta
                                     "message": "AI is analyzing..."
                                 }
                         
                         elif final_event_type == "response.completed":
                             # Final response is complete
                             logger.info("Final response completed")
-                            yield {
-                                "type": "status",
-                                "message": "Analysis complete, generating report...",
-                                "step": "generating_report"
-                            }
+                            # Convert tool_results to the format expected by frontend
+                            tool_data = {}
+                            for i, tool_result in enumerate(tool_results):
+                                try:
+                                    tool_data[f"tool_{i}"] = json.loads(tool_result["content"])
+                                except json.JSONDecodeError:
+                                    tool_data[f"tool_{i}"] = {"raw_output": tool_result["content"]}
                             
                             yield {
                                 "type": "result",
@@ -587,7 +595,7 @@ Focus on actionable insights that a non-technical user can understand and act up
                                     "summary": "AI Analysis Complete",
                                     "details": final_content,
                                     "mode": "openai",
-                                    "tool_data": {}  # Tool data is included in the streaming updates
+                                    "tool_data": tool_data
                                 }
                             }
                             return  # Exit the generator
@@ -607,7 +615,7 @@ Focus on actionable insights that a non-technical user can understand and act up
                             "summary": "AI Analysis Complete",
                             "details": "Analysis completed without tool calls",
                             "mode": "openai",
-                            "tool_data": {}
+                            "tool_data": {}  # No tool calls made
                         }
                     }
                     return  # Exit the generator

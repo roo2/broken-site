@@ -156,8 +156,9 @@
   
   .updates-list {
     padding: 1rem 1.5rem;
-    max-height: 300px;
+    height: 120px; /* Fixed height to show ~3 items */
     overflow-y: auto;
+    scroll-behavior: smooth;
   }
   
   .streaming-update {
@@ -298,7 +299,10 @@
     color: var(--text-primary);
     margin: 1.5rem 0 1rem;
     padding-bottom: 0.5rem;
-    border-bottom: 2px solid var(--border-color);
+  }
+
+  hr {
+    margin: 20px 0;
   }
   
   .summary-section {

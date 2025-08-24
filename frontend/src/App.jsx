@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { Search, AlertCircle, CheckCircle, Clock, Shield, Globe, Server, Mail, AlertTriangle, Info, Brain, Zap } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -13,6 +13,15 @@ function App() {
   const [diagnosisMode, setDiagnosisMode] = useState('openai') // Default to OpenAI mode
   const [streamingUpdates, setStreamingUpdates] = useState([])
   const [isStreaming, setIsStreaming] = useState(false)
+  const [accumulatedTextContent, setAccumulatedTextContent] = useState('')
+  const updatesListRef = useRef(null)
+
+  // Auto-scroll to bottom when new streaming updates are added
+  useEffect(() => {
+    if (updatesListRef.current) {
+      updatesListRef.current.scrollTop = updatesListRef.current.scrollHeight
+    }
+  }, [streamingUpdates])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -32,6 +41,7 @@ function App() {
     setShowTechnicalDetails(false)
     setStreamingUpdates([])
     setIsStreaming(false)
+    setAccumulatedTextContent('')
 
     try {
       if (diagnosisMode === 'openai') {
@@ -102,14 +112,18 @@ function App() {
               const update = JSON.parse(data)
               console.log('Streaming update:', update)
               
-              setStreamingUpdates(prev => [...prev, update])
-
-              if (update.type === 'result') {
+              if (update.type === 'text_content') {
+                // Accumulate text content for markdown rendering
+                setAccumulatedTextContent(prev => prev + update.content)
+              } else if (update.type === 'result') {
                 setResult(update.data)
                 return
               } else if (update.type === 'error') {
                 setError(update.message)
                 return
+              } else {
+                // Add other updates to the streaming updates list
+                setStreamingUpdates(prev => [...prev, update])
               }
             } catch (e) {
               console.error('Error parsing streaming data:', e)
@@ -276,22 +290,26 @@ function App() {
           )}
 
           {/* Streaming Updates */}
-          {isStreaming && streamingUpdates.length > 0 && (
+          {(streamingUpdates.length > 0) && (
             <div className="streaming-updates">
               <h3>Live Analysis Progress</h3>
-              <div className="updates-list">
-                {streamingUpdates.map((update, index) => renderStreamingUpdate(update))}
-              </div>
+              
+                             {/* Tool Updates */}
+               {streamingUpdates.length > 0 && (
+                 <div className="updates-list" ref={updatesListRef}>
+                   {streamingUpdates.map((update, index) => renderStreamingUpdate(update))}
+                 </div>
+               )}
             </div>
           )}
 
-          {result && (
+          {(result || accumulatedTextContent) && (
             <div className="results">
               <div className="status-card">
                 <div className="status-content">
-                  <h2>Diagnostic Results</h2>
+                  {/* <h2>Diagnostic Results</h2> */}
                   
-                  {result.mode === 'openai' ? (
+                  {(result?.mode === 'openai' || accumulatedTextContent) ? (
                     // OpenAI mode: Render markdown
                     <>
                       <div className="markdown-content">
@@ -311,12 +329,12 @@ function App() {
                             a: ({node, ...props}) => <a className="markdown-link" target="_blank" rel="noopener noreferrer" {...props} />,
                           }}
                         >
-                          {result.details}
+                          {result?.details || accumulatedTextContent}
                         </ReactMarkdown>
                       </div>
                       
                       {/* Tool Results Section */}
-                      {result.tool_data && Object.keys(result.tool_data).length > 0 && (
+                      {(result?.tool_data && Object.keys(result.tool_data).length > 0 )&& (
                         <div className="tool-results-section">
                           <h3>Diagnostic Data</h3>
                           <div className="tool-results-content">
@@ -391,12 +409,14 @@ function App() {
                   )}
                   
                   <div className="mode-info">
-                    <small>Analysis mode: {result.mode === 'openai' ? 'AI-Powered' : 'Fast Check'}</small>
+                    <small>Analysis mode: {result?.mode === 'openai' ? 'AI-Powered' : 'Fast Check'}</small>
                   </div>
                 </div>
               </div>
             </div>
           )}
+
+         
         </div>
       </main>
 
