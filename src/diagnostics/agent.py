@@ -415,13 +415,44 @@ Use the available tools to check:
 4. Visual rendering and JavaScript functionality
 5. Hosting provider detection for specific guidance
 
-Provide a comprehensive analysis with:
-- Summary of findings
-- Critical issues found
-- Specific recommendations for fixes
-- Hosting provider specific instructions if applicable
+IMPORTANT: Focus ONLY on critical issues that would make the site appear "broken" to users. Ignore minor issues, security headers, or optimization suggestions.
 
-Focus on actionable insights that a non-technical user can understand and act upon."""
+A site is "broken" if:
+- Users cannot access it at all (DNS issues, server errors)
+- Users see error pages or blank screens
+- Users get security warnings that prevent access
+- Core functionality doesn't work due to technical problems
+- Users see hosting suspension messages (like "Error. Page cannot be displayed. Please contact your service provider for more details.")
+
+IMPORTANT: When you see generic error messages from hosting providers, the most common cause is an expired hosting account or unpaid bill. Always check for this first.
+
+Provide clear, simple instructions. 
+
+IMPORTANT: You must use valid markdown! 
+
+When you detect hosting suspension errors, always include:
+1. Check if hosting account is active/paid
+2. Log into hosting provider dashboard
+3. Look for billing/payment status
+4. Contact hosting provider support if needed
+
+Keep it simple and actionable, provide instructions tailored specifically for their hosting provider. If the site is working fine, just say so briefly.
+
+Use this exact template structure:
+
+## Summary
+[One sentence: Is the site working or broken?]
+
+## Critical Issues
+[If any issues found, list them here. If no issues, write "No critical issues found."]
+
+## How to Fix
+[Step-by-step instructions for fixing any issues. If no issues, write "No action needed - your site is working correctly."]
+
+## Hosting Provider Help
+[Specific guidance for their hosting provider, or "No hosting provider issues detected."]
+
+IMPORTANT: Follow this template exactly and use proper markdown formatting with blank lines between sections."""
     
     yield {
         "type": "status", 
@@ -459,11 +490,22 @@ Focus on actionable insights that a non-technical user can understand and act up
                         "name": event.item.name,
                         "arguments": ""
                     }
+                    # Map tool names to friendly descriptions
+                    friendly_names = {
+                        "dns_lookup": "Checking your site's DNS settings",
+                        "http_check": "Checking screenshot of your website",
+                        "tls_probe": "Checking SSL certificate status",
+                        "take_screenshot_sync": "Analyzing website appearance",
+                        "hosting_provider_detect": "Identifying your hosting provider"
+                    }
+                    
+                    friendly_name = friendly_names.get(event.item.name, f"Running {event.item.name}...")
+                    
                     yield {
                         "type": "tool_call",
                         "tool": event.item.name,
                         "arguments": {},
-                        "message": f"Running {event.item.name}..."
+                        "message": friendly_name
                     }
             
             elif event_type == "response.function_call_arguments.delta":
@@ -480,15 +522,27 @@ Focus on actionable insights that a non-technical user can understand and act up
                         logger.info(f"Handling function call: {function_name} with args: {function_args}")
                         try:
                             if function_name == "dns_lookup":
+                                if "record_types" not in function_args:
+                                    function_args["record_types"] = ["A", "AAAA", "CNAME", "MX", "NS", "TXT"]
                                 result = dns_lookup(**function_args)
+                            elif function_name == "hosting_provider_detect":
+                                # Automatically get DNS records if not provided
+                                if "dns_records" not in function_args:
+                                    dns_result = dns_lookup(domain=function_args.get("domain"), record_types=["A", "AAAA", "CNAME", "MX", "NS", "TXT"])
+                                    function_args["dns_records"] = dns_result
+                                
+                                # Automatically get TLS info if not provided
+                                if "tls_info" not in function_args:
+                                    tls_result = tls_probe(host=function_args.get("domain"))
+                                    function_args["tls_info"] = tls_result
+                                
+                                result = hosting_provider_detect(**function_args)
                             elif function_name == "http_check":
                                 result = http_check(**function_args)
                             elif function_name == "tls_probe":
                                 result = tls_probe(**function_args)
                             elif function_name == "take_screenshot_sync":
                                 result = take_screenshot_sync(**function_args)
-                            elif function_name == "hosting_provider_detect":
-                                result = hosting_provider_detect(**function_args)
                             else:
                                 result = {"error": f"Unknown tool: {function_name}"}
                             
@@ -501,11 +555,22 @@ Focus on actionable insights that a non-technical user can understand and act up
                                 "content": json.dumps(result)
                             })
                             
+                            # Map tool names to friendly completion messages
+                            completion_messages = {
+                                "dns_lookup": "DNS check completed",
+                                "http_check": "Website screenshot analysis completed",
+                                "tls_probe": "SSL certificate check completed",
+                                "take_screenshot_sync": "Website appearance analysis completed",
+                                "hosting_provider_detect": "Hosting provider identification completed"
+                            }
+                            
+                            completion_message = completion_messages.get(function_name, f"Completed {function_name}")
+                            
                             yield {
                                 "type": "tool_result",
                                 "tool": function_name,
                                 "result": result,
-                                "message": f"Completed {function_name}"
+                                "message": completion_message
                             }
                             
                         except Exception as e:
@@ -570,7 +635,7 @@ Focus on actionable insights that a non-technical user can understand and act up
                         logger.debug(f"Final response event: {final_event_type}")
                         
                         if final_event_type == "response.output_text.delta":
-                            if final_event.delta and final_event.delta.strip():
+                            if final_event.delta:
                                 final_content += final_event.delta
                                 yield {
                                     "type": "text_content",

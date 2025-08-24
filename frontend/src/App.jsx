@@ -333,22 +333,6 @@ function App() {
                         </ReactMarkdown>
                       </div>
                       
-                      {/* Tool Results Section */}
-                      {(result?.tool_data && Object.keys(result.tool_data).length > 0 )&& (
-                        <div className="tool-results-section">
-                          <h3>Diagnostic Data</h3>
-                          <div className="tool-results-content">
-                            {Object.entries(result.tool_data).map(([tool_id, data], index) => (
-                              <div key={index} className="tool-result">
-                                <h4>Tool Call {index + 1}</h4>
-                                <pre className="tool-data">
-                                  {JSON.stringify(data, null, 2)}
-                                </pre>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
                     </>
                   ) : (
                     // Offline mode: Use structured format
@@ -412,6 +396,23 @@ function App() {
                     <small>Analysis mode: {result?.mode === 'openai' ? 'AI-Powered' : 'Fast Check'}</small>
                   </div>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Tool Results Section - Moved outside main results */}
+          {(result?.tool_data && Object.keys(result.tool_data).length > 0) && (
+            <div className="tool-results-section" style={{ marginTop: '300px' }}>
+              <h3>Diagnostic Data</h3>
+              <div className="tool-results-content">
+                {Object.entries(result.tool_data).map(([tool_id, data], index) => (
+                  <div key={index} className="tool-result">
+                    <h4>Tool Call {index + 1}</h4>
+                    <pre className="tool-data">
+                      {JSON.stringify(data, null, 2)}
+                    </pre>
+                  </div>
+                ))}
               </div>
             </div>
           )}
