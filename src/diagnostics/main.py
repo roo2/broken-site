@@ -1,11 +1,13 @@
 import logging
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import StreamingResponse
 from .schemas import DiagnoseRequest, DiagnosticReport, UserFriendlyReport
 from pydantic import BaseModel
 from .offline import run_offline_diagnosis
-from .agent import run_agent
+from .agent import run_agent, run_agent_streaming
 from .user_friendly import convert_to_user_friendly
 from .config import settings
+import json
 
 # Configure logging
 import os
@@ -210,3 +212,58 @@ def diagnose_textual(req: DiagnoseRequest, mode: str = "openai"):
     except Exception as e:
         logger.error(f"Unexpected error in textual diagnose endpoint for {req.target}: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/diagnose/stream")
+def diagnose_streaming(req: DiagnoseRequest, mode: str = "openai"):
+    """Stream diagnosis updates in real-time using Server-Sent Events.
+    Provides live updates as the AI agent thinks and uses tools.
+    """
+    logger.info(f"Starting streaming diagnosis for target: {req.target} with mode: {mode}")
+    
+    if mode != "openai":
+        # For offline mode, return a simple stream with the result
+        def offline_stream():
+            yield f"data: {json.dumps({'type': 'status', 'message': 'Starting offline diagnosis...'})}\n\n"
+            
+            try:
+                result = run_offline_diagnosis(req.target)
+                yield f"data: {json.dumps({'type': 'status', 'message': 'Offline diagnosis completed'})}\n\n"
+                yield f"data: {json.dumps({'type': 'result', 'data': result.dict()})}\n\n"
+            except Exception as e:
+                yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+            
+            yield "data: [DONE]\n\n"
+        
+        return StreamingResponse(
+            offline_stream(),
+            media_type="text/plain",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "Content-Type": "text/event-stream",
+            }
+        )
+    
+    # For OpenAI mode, use the streaming agent
+    if not settings.OPENAI_API_KEY:
+        raise HTTPException(status_code=400, detail="OPENAI_API_KEY is required for streaming diagnosis")
+    
+    def streaming_response():
+        try:
+            for update in run_agent_streaming(req.target):
+                yield f"data: {json.dumps(update)}\n\n"
+        except Exception as e:
+            logger.error(f"Error in streaming diagnosis: {str(e)}")
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
+        finally:
+            yield "data: [DONE]\n\n"
+    
+    return StreamingResponse(
+        streaming_response(),
+        media_type="text/plain",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "Content-Type": "text/event-stream",
+        }
+    )

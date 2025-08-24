@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Generator
 from openai import OpenAI
 from .config import settings
 from .schemas import DiagnosticReport, Issue
@@ -8,97 +8,87 @@ from .tools import dns_lookup, tls_probe, http_check, hosting_provider_detect, t
 
 logger = logging.getLogger(__name__)
 
-# Tool definitions for the Chat Completions API - Focus on critical issues only
+# Tool definitions for the Responses API - Focus on critical issues only
 TOOLS = [
     {
         "type": "function",
-        "function": {
-            "name": "dns_lookup",
-            "description": "Lookup DNS records for a domain to check if it resolves",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "domain": {"type": "string"},
-                    "record_types": {
-                        "type": "array",
-                        "items": {"type": "string", "enum": ["A","AAAA","CNAME","MX","NS","TXT"]},
-                        "default": ["A","AAAA","CNAME","MX","NS","TXT"]
-                    }
-                },
-                "required": ["domain"]
-            }
-        }
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "http_check",
-            "description": "Fetch a URL and return status, final URL, headers, and sample of body to check if the site is accessible",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "url": {"type": "string"},
-                    "method": {"type": "string", "enum": ["GET","HEAD","POST"], "default": "GET"},
-                    "follow_redirects": {"type": "boolean", "default": True},
-                    "timeout_sec": {"type": "integer", "default": 10}
-                },
-                "required": ["url"]
-            }
-        }
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "tls_probe",
-            "description": "Probe a TLS endpoint to get cert details and expiry to check if HTTPS is working",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "host": {"type": "string"},
-                    "port": {"type": "integer", "default": 443},
-                    "sni": {"type": "boolean", "default": True}
-                },
-                "required": ["host"]
-            }
-        }
-    },
-            {
-                "type": "function",
-                "function": {
-                    "name": "take_screenshot_sync",
-                    "description": "Analyze a website for visual issues, rendering problems, JavaScript errors, or broken content using browser automation.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "url": {"type": "string", "description": "The URL to analyze"},
-                            "width": {"type": "integer", "default": 1280, "description": "Viewport width"},
-                            "height": {"type": "integer", "default": 720, "description": "Viewport height"},
-                            "timeout": {"type": "integer", "default": 30000, "description": "Timeout in milliseconds"}
-                        },
-                        "required": ["url"]
-                    }
+        "name": "dns_lookup",
+        "description": "Lookup DNS records for a domain to check if it resolves",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "domain": {"type": "string"},
+                "record_types": {
+                    "type": "array",
+                    "items": {"type": "string", "enum": ["A","AAAA","CNAME","MX","NS","TXT"]},
+                    "default": ["A","AAAA","CNAME","MX","NS","TXT"]
                 }
             },
+            "required": ["domain"]
+        }
+    },
     {
         "type": "function",
-        "function": {
-            "name": "hosting_provider_detect",
-            "description": "Detect hosting provider based on DNS records and TLS certificate information, providing specific instructions and dashboard links",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "domain": {"type": "string"},
-                    "dns_records": {
-                        "type": "object",
-                        "description": "DNS records from dns_lookup function (optional)"
-                    },
-                    "tls_info": {
-                        "type": "object",
-                        "description": "TLS certificate information from tls_probe function (optional)"
-                    }
+        "name": "http_check",
+        "description": "Fetch a URL and return status, final URL, headers, and sample of body to check if the site is accessible",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "url": {"type": "string"},
+                "method": {"type": "string", "enum": ["GET","HEAD","POST"], "default": "GET"},
+                "follow_redirects": {"type": "boolean", "default": True},
+                "timeout_sec": {"type": "integer", "default": 10}
+            },
+            "required": ["url"]
+        }
+    },
+    {
+        "type": "function",
+        "name": "tls_probe",
+        "description": "Probe a TLS endpoint to get cert details and expiry to check if HTTPS is working",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "host": {"type": "string"},
+                "port": {"type": "integer", "default": 443},
+                "sni": {"type": "boolean", "default": True}
+            },
+            "required": ["host"]
+        }
+    },
+    {
+        "type": "function",
+        "name": "take_screenshot_sync",
+        "description": "Analyze a website for visual issues, rendering problems, JavaScript errors, or broken content using browser automation.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "url": {"type": "string", "description": "The URL to analyze"},
+                "width": {"type": "integer", "default": 1280, "description": "Viewport width"},
+                "height": {"type": "integer", "default": 720, "description": "Viewport height"},
+                "timeout": {"type": "integer", "default": 30000, "description": "Timeout in milliseconds"}
+            },
+            "required": ["url"]
+        }
+    },
+    {
+        "type": "function",
+        "name": "hosting_provider_detect",
+        "description": "Detect hosting provider based on DNS records and TLS certificate information, providing specific instructions and dashboard links",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "domain": {"type": "string"},
+                "dns_records": {
+                    "type": "object",
+                    "description": "DNS records from dns_lookup function (optional)"
                 },
-                "required": ["domain"]
-            }
+                "tls_info": {
+                    "type": "object",
+                    "description": "TLS certificate information from tls_probe function (optional)"
+                }
+            },
+            "required": ["domain"]
         }
     }
 ]
@@ -314,3 +304,317 @@ Synthesize your findings into clear, actionable issues that focus on what would 
     
     logger.info("Successfully created DiagnosticReport from markdown response")
     return result
+
+def run_agent_streaming(target: str) -> Generator[Dict[str, Any], None, None]:
+    """
+    Run the AI agent with streaming updates using OpenAI Responses API.
+    Yields real-time updates as the agent thinks and uses tools.
+    """
+    logger.info(f"Starting streaming agent diagnosis for target: {target}")
+    
+    client = OpenAI(api_key=settings.OPENAI_API_KEY)
+    
+    yield {
+        "type": "status",
+        "message": "Initializing AI agent...",
+        "step": "initialization"
+    }
+    
+    # Prepare the tools for the Responses API
+    tools = [
+        {
+            "type": "function",
+            "name": "dns_lookup",
+            "description": "Lookup DNS records for a domain to check if it resolves",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "domain": {"type": "string"},
+                    "record_types": {
+                        "type": "array",
+                        "items": {"type": "string", "enum": ["A","AAAA","CNAME","MX","NS","TXT"]},
+                        "default": ["A","AAAA","CNAME","MX","NS","TXT"]
+                    }
+                },
+                "required": ["domain"]
+            }
+        },
+        {
+            "type": "function",
+            "name": "http_check",
+            "description": "Fetch a URL and return status, final URL, headers, and sample of body to check if the site is accessible",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "url": {"type": "string"},
+                    "method": {"type": "string", "enum": ["GET","HEAD","POST"], "default": "GET"},
+                    "follow_redirects": {"type": "boolean", "default": True},
+                    "timeout_sec": {"type": "integer", "default": 10}
+                },
+                "required": ["url"]
+            }
+        },
+        {
+            "type": "function",
+            "name": "tls_probe",
+            "description": "Probe a TLS endpoint to get cert details and expiry to check if HTTPS is working",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "host": {"type": "string"},
+                    "port": {"type": "integer", "default": 443},
+                    "sni": {"type": "boolean", "default": True}
+                },
+                "required": ["host"]
+            }
+        },
+        {
+            "type": "function",
+            "name": "take_screenshot_sync",
+            "description": "Analyze a website for visual issues, rendering problems, JavaScript errors, or broken content using browser automation.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "url": {"type": "string", "description": "The URL to analyze"},
+                    "width": {"type": "integer", "default": 1280, "description": "Viewport width"},
+                    "height": {"type": "integer", "default": 720, "description": "Viewport height"},
+                    "timeout": {"type": "integer", "default": 30000, "description": "Timeout in milliseconds"}
+                },
+                "required": ["url"]
+            }
+        },
+        {
+            "type": "function",
+            "name": "hosting_provider_detect",
+            "description": "Detect hosting provider based on DNS records and TLS certificate information, providing specific instructions and dashboard links",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "domain": {"type": "string"},
+                    "dns_records": {
+                        "type": "object",
+                        "description": "DNS records from dns_lookup function (optional)"
+                    },
+                    "tls_info": {
+                        "type": "object",
+                        "description": "TLS certificate information from tls_probe function (optional)"
+                    }
+                },
+                "required": ["domain"]
+            }
+        }
+    ]
+    
+    # Initial prompt
+    initial_message = f"""Please diagnose the website at {target}. 
+
+Use the available tools to check:
+1. DNS resolution and configuration
+2. TLS/SSL certificate status and security
+3. HTTP accessibility and response codes
+4. Visual rendering and JavaScript functionality
+5. Hosting provider detection for specific guidance
+
+Provide a comprehensive analysis with:
+- Summary of findings
+- Critical issues found
+- Specific recommendations for fixes
+- Hosting provider specific instructions if applicable
+
+Focus on actionable insights that a non-technical user can understand and act upon."""
+    
+    yield {
+        "type": "status", 
+        "message": "Analyzing website...",
+        "step": "initial_analysis"
+    }
+    
+    try:
+        # Create the streaming response
+        stream = client.responses.create(
+            model="gpt-4o-mini",
+            input=[{"role": "user", "content": initial_message}],
+            tools=tools,
+            stream=True,
+        )
+        
+        # Process the streaming response
+        current_function_call = None
+        function_arguments = ""
+        tool_results = []
+        response_output = []
+        
+        for event in stream:
+            event_type = event.type
+            logger.debug(f"Received event: {event_type}")
+            
+            if event_type == "response.output_item.added":
+                # Add this item to our response output
+                response_output.append(event.item)
+                
+                if event.item.type == "function_call":
+                    current_function_call = {
+                        "id": event.item.id,
+                        "call_id": event.item.call_id,
+                        "name": event.item.name,
+                        "arguments": ""
+                    }
+                    yield {
+                        "type": "tool_call",
+                        "tool": event.item.name,
+                        "arguments": {},
+                        "message": f"Running {event.item.name}..."
+                    }
+            
+            elif event_type == "response.function_call_arguments.delta":
+                if current_function_call and event.item_id == current_function_call["id"]:
+                    function_arguments += event.delta
+            
+            elif event_type == "response.function_call_arguments.done":
+                if current_function_call and event.item_id == current_function_call["id"]:
+                    try:
+                        function_args = json.loads(event.arguments)
+                        function_name = current_function_call["name"]
+                        
+                        # Execute the tool
+                        logger.info(f"Handling function call: {function_name} with args: {function_args}")
+                        try:
+                            if function_name == "dns_lookup":
+                                result = dns_lookup(**function_args)
+                            elif function_name == "http_check":
+                                result = http_check(**function_args)
+                            elif function_name == "tls_probe":
+                                result = tls_probe(**function_args)
+                            elif function_name == "take_screenshot_sync":
+                                result = take_screenshot_sync(**function_args)
+                            elif function_name == "hosting_provider_detect":
+                                result = hosting_provider_detect(**function_args)
+                            else:
+                                result = {"error": f"Unknown tool: {function_name}"}
+                            
+                            logger.info(f"Function {function_name} executed successfully")
+                            
+                            # Store tool result for the next API call
+                            tool_results.append({
+                                "type": "tool_result",
+                                "tool_call_id": current_function_call["call_id"],
+                                "content": json.dumps(result)
+                            })
+                            
+                            yield {
+                                "type": "tool_result",
+                                "tool": function_name,
+                                "result": result,
+                                "message": f"Completed {function_name}"
+                            }
+                            
+                        except Exception as e:
+                            logger.error(f"Error executing tool {function_name}: {str(e)}")
+                            yield {
+                                "type": "tool_error",
+                                "tool": function_name,
+                                "error": str(e),
+                                "message": f"Error in {function_name}: {str(e)}"
+                            }
+                        
+                        current_function_call = None
+                        function_arguments = ""
+                        
+                    except json.JSONDecodeError as e:
+                        logger.error(f"Error parsing function arguments: {str(e)}")
+                        yield {
+                            "type": "tool_error",
+                            "tool": current_function_call["name"],
+                            "error": f"Invalid arguments: {str(e)}",
+                            "message": f"Error parsing arguments for {current_function_call['name']}"
+                        }
+            
+            elif event_type == "response.completed":
+                # Tool calls are completed, now get the final response
+                logger.info("Tool calls completed, getting final response")
+                
+                if tool_results:
+                    # Create new input with tool results
+                    new_input = [
+                        {"role": "user", "content": initial_message}
+                    ]
+                    
+                    # Add the response output to our input (this includes the function calls)
+                    new_input += response_output
+                    
+                    # Add tool results to the conversation
+                    for tool_result in tool_results:
+                        new_input.append({
+                            "type": "function_call_output",
+                            "call_id": tool_result["tool_call_id"],
+                            "output": tool_result["content"]
+                        })
+                    
+                    # Get the final response
+                    final_stream = client.responses.create(
+                        model="gpt-4o-mini",
+                        input=new_input,
+                        stream=True
+                    )
+                    
+                    # Process the final response
+                    final_content = ""
+                    for final_event in final_stream:
+                        final_event_type = final_event.type
+                        logger.debug(f"Final response event: {final_event_type}")
+                        
+                        if final_event_type == "response.output_text.delta":
+                            if final_event.delta and final_event.delta.strip():
+                                final_content += final_event.delta
+                                yield {
+                                    "type": "text_content",
+                                    "content": final_event.delta,
+                                    "message": "AI is analyzing..."
+                                }
+                        
+                        elif final_event_type == "response.completed":
+                            # Final response is complete
+                            logger.info("Final response completed")
+                            yield {
+                                "type": "status",
+                                "message": "Analysis complete, generating report...",
+                                "step": "generating_report"
+                            }
+                            
+                            yield {
+                                "type": "result",
+                                "data": {
+                                    "summary": "AI Analysis Complete",
+                                    "details": final_content,
+                                    "mode": "openai",
+                                    "tool_data": {}  # Tool data is included in the streaming updates
+                                }
+                            }
+                            return  # Exit the generator
+                
+                else:
+                    # No tool calls were made, response is already complete
+                    logger.info("No tool calls made, response is complete")
+                    yield {
+                        "type": "status",
+                        "message": "Analysis complete, generating report...",
+                        "step": "generating_report"
+                    }
+                    
+                    yield {
+                        "type": "result",
+                        "data": {
+                            "summary": "AI Analysis Complete",
+                            "details": "Analysis completed without tool calls",
+                            "mode": "openai",
+                            "tool_data": {}
+                        }
+                    }
+                    return  # Exit the generator
+                
+    except Exception as e:
+        logger.error(f"Error in streaming response: {str(e)}")
+        yield {
+            "type": "error",
+            "message": f"Streaming error: {str(e)}"
+        }

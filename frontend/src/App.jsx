@@ -11,6 +11,8 @@ function App() {
   const [error, setError] = useState(null)
   const [showTechnicalDetails, setShowTechnicalDetails] = useState(false)
   const [diagnosisMode, setDiagnosisMode] = useState('openai') // Default to OpenAI mode
+  const [streamingUpdates, setStreamingUpdates] = useState([])
+  const [isStreaming, setIsStreaming] = useState(false)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -28,29 +30,17 @@ function App() {
     setError(null)
     setResult(null)
     setShowTechnicalDetails(false)
+    setStreamingUpdates([])
+    setIsStreaming(false)
 
     try {
-      console.log(`Making API request to: /api/diagnose/textual?mode=${diagnosisMode}`)
-      
-      const response = await fetch(`/api/diagnose/textual?mode=${diagnosisMode}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ target: normalizedUrl }),
-      })
-
-      console.log(`API response status: ${response.status}`)
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error(`API error response: ${errorText}`)
-        throw new Error(`HTTP error! status: ${response.status}`)
+      if (diagnosisMode === 'openai') {
+        // Use streaming for AI-powered mode
+        await handleStreamingDiagnosis(normalizedUrl)
+      } else {
+        // Use regular API for offline mode
+        await handleRegularDiagnosis(normalizedUrl)
       }
-
-      const data = await response.json()
-      console.log('API response data:', data)
-      setResult(data)
     } catch (err) {
       console.error('Error during diagnosis:', err)
       
@@ -65,8 +55,95 @@ function App() {
       }
     } finally {
       setIsLoading(false)
+      setIsStreaming(false)
       console.log('Diagnosis request completed')
     }
+  }
+
+  const handleStreamingDiagnosis = async (normalizedUrl) => {
+    console.log('Starting streaming diagnosis...')
+    setIsStreaming(true)
+    
+    const response = await fetch('/api/diagnose/stream?mode=openai', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ target: normalizedUrl }),
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error(`Streaming API error response: ${errorText}`)
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    const reader = response.body.getReader()
+    const decoder = new TextDecoder()
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        const chunk = decoder.decode(value)
+        const lines = chunk.split('\n')
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.slice(6) // Remove 'data: ' prefix
+            
+            if (data === '[DONE]') {
+              console.log('Streaming completed')
+              return
+            }
+
+            try {
+              const update = JSON.parse(data)
+              console.log('Streaming update:', update)
+              
+              setStreamingUpdates(prev => [...prev, update])
+
+              if (update.type === 'result') {
+                setResult(update.data)
+                return
+              } else if (update.type === 'error') {
+                setError(update.message)
+                return
+              }
+            } catch (e) {
+              console.error('Error parsing streaming data:', e)
+            }
+          }
+        }
+      }
+    } finally {
+      reader.releaseLock()
+    }
+  }
+
+  const handleRegularDiagnosis = async (normalizedUrl) => {
+    console.log(`Making API request to: /api/diagnose/textual?mode=${diagnosisMode}`)
+    
+    const response = await fetch(`/api/diagnose/textual?mode=${diagnosisMode}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ target: normalizedUrl }),
+    })
+
+    console.log(`API response status: ${response.status}`)
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      console.error(`API error response: ${errorText}`)
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    const data = await response.json()
+    console.log('API response data:', data)
+    setResult(data)
   }
 
   const getUrgencyIcon = (urgency) => {
@@ -84,6 +161,48 @@ function App() {
       case 'important': return 'warning'
       case 'minor': return 'info'
       default: return 'info'
+    }
+  }
+
+  const renderStreamingUpdate = (update) => {
+    switch (update.type) {
+      case 'status':
+        return (
+          <div key={update.message} className="streaming-update status">
+            <Clock size={16} />
+            <span>{update.message}</span>
+          </div>
+        )
+      case 'tool_call':
+        return (
+          <div key={`${update.tool}-${update.message}`} className="streaming-update tool-call">
+            <Search size={16} />
+            <span>{update.message}</span>
+          </div>
+        )
+      case 'tool_result':
+        return (
+          <div key={`${update.tool}-result`} className="streaming-update tool-result">
+            <CheckCircle size={16} />
+            <span>{update.message}</span>
+          </div>
+        )
+      case 'tool_error':
+        return (
+          <div key={`${update.tool}-error`} className="streaming-update tool-error">
+            <AlertCircle size={16} />
+            <span>{update.message}</span>
+          </div>
+        )
+      case 'thinking':
+        return (
+          <div key={`thinking-${update.content}`} className="streaming-update thinking">
+            <Brain size={16} />
+            <span>AI is analyzing: {update.content}</span>
+          </div>
+        )
+      default:
+        return null
     }
   }
 
@@ -156,7 +275,15 @@ function App() {
             </div>
           )}
 
-
+          {/* Streaming Updates */}
+          {isStreaming && streamingUpdates.length > 0 && (
+            <div className="streaming-updates">
+              <h3>Live Analysis Progress</h3>
+              <div className="updates-list">
+                {streamingUpdates.map((update, index) => renderStreamingUpdate(update))}
+              </div>
+            </div>
+          )}
 
           {result && (
             <div className="results">
