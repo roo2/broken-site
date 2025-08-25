@@ -59,6 +59,20 @@ fi
 echo "✅ Setting LOG_LEVEL..."
 heroku config:set LOG_LEVEL=INFO --app "$app_name"
 
+# Set up buildpacks
+echo "🔧 Setting up buildpacks..."
+echo "🧹 Clearing existing buildpacks..."
+heroku buildpacks:clear --app "$app_name"
+
+echo "📦 Adding Node.js buildpack..."
+heroku buildpacks:add heroku/nodejs --app "$app_name"
+
+echo "🐍 Adding Python buildpack..."
+heroku buildpacks:add heroku/python --app "$app_name"
+
+echo "✅ Verifying buildpacks..."
+heroku buildpacks --app "$app_name"
+
 # Deploy to Heroku
 echo "🚀 Deploying to Heroku..."
 git add .
