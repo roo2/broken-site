@@ -44,13 +44,8 @@ function App() {
     setAccumulatedTextContent('')
 
     try {
-      if (diagnosisMode === 'openai') {
-        // Use streaming for AI-powered mode
-        await handleStreamingDiagnosis(normalizedUrl)
-      } else {
-        // Use regular API for offline mode
-        await handleRegularDiagnosis(normalizedUrl)
-      }
+      // Always use streaming endpoint - it handles both AI and offline modes
+      await handleStreamingDiagnosis(normalizedUrl)
     } catch (err) {
       console.error('Error during diagnosis:', err)
       
@@ -74,7 +69,7 @@ function App() {
     console.log('Starting streaming diagnosis...')
     setIsStreaming(true)
     
-    const response = await fetch('/api/diagnose/stream?mode=openai', {
+    const response = await fetch(`/api/diagnose/stream?mode=${diagnosisMode}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -136,29 +131,7 @@ function App() {
     }
   }
 
-  const handleRegularDiagnosis = async (normalizedUrl) => {
-    console.log(`Making API request to: /api/diagnose/textual?mode=${diagnosisMode}`)
-    
-    const response = await fetch(`/api/diagnose/textual?mode=${diagnosisMode}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ target: normalizedUrl }),
-    })
 
-    console.log(`API response status: ${response.status}`)
-
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error(`API error response: ${errorText}`)
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-
-    const data = await response.json()
-    console.log('API response data:', data)
-    setResult(data)
-  }
 
   const getUrgencyIcon = (urgency) => {
     switch (urgency) {
