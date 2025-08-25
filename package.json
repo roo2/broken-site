@@ -1,5 +1,8 @@
 {
   "name": "brokensite",
   "version": "1.0.0",
-  "description": "AI-powered website diagnostics tool"
+  "description": "AI-powered website diagnostics tool",
+  "scripts": {
+    "heroku-postbuild": "npm ci --prefix frontend && npm run build --prefix frontend"
+  }
 }
