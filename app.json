@@ -5,6 +5,14 @@
     "OPENAI_API_KEY": { "required": true },
     "LOG_LEVEL": { "required": false, "value": "INFO" }
   },
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    },
+    {
+      "url": "heroku/python"
+    }
+  ],
   "scripts": {
     "postdeploy": "bash heroku-build.sh"
   }
