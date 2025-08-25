@@ -3,7 +3,7 @@ import logging
 from typing import Dict, Any, List, Generator
 from openai import OpenAI
 from .config import settings
-from .schemas import DiagnosticReport, Issue
+
 from .tools import dns_lookup, tls_probe, http_check, hosting_provider_detect, take_screenshot_sync
 
 logger = logging.getLogger(__name__)

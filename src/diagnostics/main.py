@@ -4,11 +4,11 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
-from .schemas import DiagnoseRequest, DiagnosticReport, UserFriendlyReport
+from .schemas import DiagnoseRequest, DiagnosticReport
 from pydantic import BaseModel
 from .offline import run_offline_diagnosis
 from .agent import run_agent_streaming
-from .user_friendly import convert_to_user_friendly
+
 from .config import settings
 import json
 
