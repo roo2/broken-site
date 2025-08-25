@@ -1,0 +1,13 @@
+{
+  "name": "brokensite",
+  "version": "1.0.0",
+  "description": "AI-powered website diagnostics tool",
+  "scripts": {
+    "build": "bash build.sh",
+    "postinstall": "bash build.sh"
+  },
+  "engines": {
+    "node": "18.x",
+    "npm": "9.x"
+  }
+}

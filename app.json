@@ -1,0 +1,32 @@
+{
+  "name": "BrokenSite",
+  "description": "AI-powered website diagnostics tool",
+  "repository": "https://github.com/yourusername/vibecamp-broken-site",
+  "logo": "https://node-js-sample.herokuapp.com/node.png",
+  "keywords": ["python", "fastapi", "react", "diagnostics", "ai"],
+  "env": {
+    "OPENAI_API_KEY": {
+      "description": "Your OpenAI API key for AI-powered diagnostics",
+      "required": true
+    },
+    "LOG_LEVEL": {
+      "description": "Logging level (DEBUG, INFO, WARNING, ERROR)",
+      "value": "INFO",
+      "required": false
+    }
+  },
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    },
+    {
+      "url": "heroku/python"
+    }
+  ],
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "basic"
+    }
+  }
+}

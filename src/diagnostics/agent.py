@@ -424,7 +424,7 @@ A site is "broken" if:
 - Core functionality doesn't work due to technical problems
 - Users see hosting suspension messages (like "Error. Page cannot be displayed. Please contact your service provider for more details.")
 
-IMPORTANT: When you see generic error messages from hosting providers, the most common cause is an expired hosting account or unpaid bill. Always check for this first.
+IMPORTANT: When you see generic error messages from hosting providers, the most common cause is an expired hosting account or unpaid bill.
 
 Provide clear, simple instructions. 
 
@@ -452,7 +452,10 @@ Use this exact template structure:
 ## Hosting Provider Help
 [Specific guidance for their hosting provider, or "No hosting provider issues detected."]
 
-IMPORTANT: Follow this template exactly and use proper markdown formatting with blank lines between sections."""
+IMPORTANT: 
+- Follow this template exactly and use proper markdown formatting with blank lines between sections
+- If the site uses a specific platform (WordPress, Shopify, etc.), tailor the instructions to that platform
+- Consider the technology stack when providing fix instructions (e.g., WordPress admin vs. hosting dashboard)"""
     
     yield {
         "type": "status", 

@@ -1,6 +1,9 @@
 import logging
+import os
+from pathlib import Path
 from fastapi import FastAPI, HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from .schemas import DiagnoseRequest, DiagnosticReport, UserFriendlyReport
 from pydantic import BaseModel
 from .offline import run_offline_diagnosis
@@ -20,6 +23,11 @@ logger = logging.getLogger(__name__)
 logger.setLevel(getattr(logging, log_level, logging.ERROR))
 
 app = FastAPI(title="BrokenSite", version="0.1.0")
+
+# Mount static files for the frontend
+frontend_path = Path(__file__).parent.parent.parent / "frontend" / "dist"
+if frontend_path.exists():
+    app.mount("/", StaticFiles(directory=str(frontend_path), html=True), name="static")
 
 @app.get("/healthz")
 def health():
