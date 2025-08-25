@@ -6,7 +6,7 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
-from diagnostics.agent import run_agent
+from diagnostics.agent import run_agent_streaming
 from diagnostics.config import settings
 from rich import print
 
@@ -24,12 +24,17 @@ def test_agent():
     for target in test_targets:
         print(f"\n[bold blue]Testing Agent: {target}[/bold blue]")
         try:
-            result = run_agent(target)
-            print(f"[green]✓ Success[/green]")
-            print(f"Summary: {result.summary}")
-            print(f"Issues found: {len(result.issues)}")
-            for issue in result.issues:
-                print(f"  - [{issue.severity.upper()}] {issue.category}: {issue.evidence}")
+            print(f"[green]✓ Testing streaming agent[/green]")
+            # Test the streaming agent
+            updates = []
+            for update in run_agent_streaming(target):
+                updates.append(update)
+                if update.get('type') == 'result':
+                    print(f"[green]✓ Streaming completed[/green]")
+                    break
+                elif update.get('type') == 'error':
+                    print(f"[red]✗ Streaming error: {update.get('message')}[/red]")
+                    break
         except Exception as e:
             print(f"[red]✗ Error: {e}[/red]")
 

@@ -6,7 +6,7 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from diagnostics.agent import run_agent
+from diagnostics.agent import run_agent_streaming
 from diagnostics.config import settings
 import asyncio
 
@@ -31,17 +31,20 @@ def test_openai_api():
     print(f"\n🎯 Testing with target: {test_target}")
     
     try:
-        print("🔄 Calling OpenAI agent...")
-        result = run_agent(test_target)
+        print("🔄 Calling OpenAI streaming agent...")
         
-        print("✅ OpenAI agent executed successfully!")
-        print(f"📊 Summary: {result.summary}")
-        print(f"🔍 Issues found: {len(result.issues)}")
-        
-        if result.issues:
-            print("\n📋 Issues:")
-            for i, issue in enumerate(result.issues, 1):
-                print(f"  {i}. {issue.category} - {issue.severity} severity")
+        # Test the streaming agent
+        updates = []
+        for update in run_agent_streaming(test_target):
+            updates.append(update)
+            if update.get('type') == 'result':
+                print("✅ OpenAI streaming agent executed successfully!")
+                result_data = update.get('data', {})
+                print(f"📊 Summary: {result_data.get('summary', 'N/A')}")
+                return True
+            elif update.get('type') == 'error':
+                print(f"❌ Streaming error: {update.get('message')}")
+                return False
         
         return True
         
