@@ -27,11 +27,34 @@ app = FastAPI(title="BrokenSite", version="0.1.0")
 # Mount static files for the frontend
 frontend_path = Path(__file__).parent.parent.parent / "frontend" / "dist"
 if frontend_path.exists():
-    app.mount("/", StaticFiles(directory=str(frontend_path), html=True), name="static")
+    app.mount("/static", StaticFiles(directory=str(frontend_path)), name="static")
+
+@app.get("/")
+async def root():
+    """Serve the frontend index.html"""
+    frontend_path = Path(__file__).parent.parent.parent / "frontend" / "dist" / "index.html"
+    logger.info(f"Looking for frontend at: {frontend_path}")
+    logger.info(f"Frontend path exists: {frontend_path.exists()}")
+    
+    if frontend_path.exists():
+        logger.info("Serving frontend index.html")
+        return FileResponse(str(frontend_path))
+    else:
+        logger.warning("Frontend not found, checking if dist directory exists")
+        dist_path = Path(__file__).parent.parent.parent / "frontend" / "dist"
+        if dist_path.exists():
+            logger.info(f"Dist directory exists, contents: {list(dist_path.iterdir())}")
+        else:
+            logger.warning("Dist directory does not exist")
+        return {"message": "Frontend not built. Please run 'npm run build' in the frontend directory."}
 
 @app.get("/healthz")
 def health():
     return {"ok": True}
+
+@app.get("/api/test")
+def test_api():
+    return {"message": "API is working!", "status": "ok"}
 
 @app.post("/diagnose", response_model=DiagnosticReport)
 def diagnose(req: DiagnoseRequest, mode: str = "offline"):

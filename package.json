@@ -4,7 +4,8 @@
   "description": "AI-powered website diagnostics tool",
   "scripts": {
     "build": "bash build.sh",
-    "postinstall": "bash build.sh"
+    "postinstall": "bash build.sh",
+    "heroku-postbuild": "bash build.sh"
   },
   "engines": {
     "node": "18.x",

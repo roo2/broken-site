@@ -23,7 +23,7 @@ read app_name
 
 if [ -z "$app_name" ]; then
     echo "🆕 Creating new Heroku app..."
-    app_name=$(heroku create --json | grep -o '"name":"[^"]*"' | cut -d'"' -f4)
+    app_name=$(heroku create --json | python3 -c "import sys, json; print(json.load(sys.stdin)['name'])")
     echo "✅ Created app: $app_name"
 else
     echo "🔗 Using existing app: $app_name"
