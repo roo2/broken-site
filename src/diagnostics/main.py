@@ -27,7 +27,7 @@ app = FastAPI(title="BrokenSite", version="0.1.0")
 # Mount static files for the frontend
 frontend_path = Path(__file__).parent.parent.parent / "frontend" / "dist"
 if frontend_path.exists():
-    app.mount("/static", StaticFiles(directory=str(frontend_path)), name="static")
+    app.mount("/assets", StaticFiles(directory=str(frontend_path / "assets")), name="assets")
 
 @app.get("/")
 async def root():
@@ -67,6 +67,17 @@ async def root():
 @app.get("/healthz")
 def health():
     return {"ok": True}
+
+@app.get("/favicon.svg")
+async def favicon():
+    """Serve the favicon"""
+    frontend_path = Path(__file__).parent.parent.parent / "frontend" / "dist"
+    favicon_path = frontend_path / "favicon.svg"
+    if favicon_path.exists():
+        return FileResponse(str(favicon_path))
+    else:
+        # Return a simple SVG if the file doesn't exist
+        return {"message": "Icon not found"}
 
 @app.get("/api/test")
 def test_api():
