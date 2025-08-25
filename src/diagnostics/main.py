@@ -83,7 +83,7 @@ async def favicon():
 def test_api():
     return {"message": "API is working!", "status": "ok"}
 
-@app.post("/diagnose", response_model=DiagnosticReport)
+@app.post("/api/diagnose", response_model=DiagnosticReport)
 def diagnose(req: DiagnoseRequest, mode: str = "offline"):
     """Diagnose a target (URL or domain). mode=offline runs deterministic checks.
     mode=openai uses the OpenAI Responses API with tool-calling for reasoning & reporting.
@@ -111,7 +111,7 @@ def diagnose(req: DiagnoseRequest, mode: str = "offline"):
         logger.error(f"Unexpected error in diagnose endpoint for {req.target}: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/diagnose/user-friendly", response_model=UserFriendlyReport)
+@app.post("/api/diagnose/user-friendly", response_model=UserFriendlyReport)
 def diagnose_user_friendly(req: DiagnoseRequest, mode: str = "offline"):
     """Diagnose a target and return a user-friendly report focusing on the most critical issue.
     Perfect for non-technical users who just want to know what's wrong and how to fix it.
@@ -152,7 +152,7 @@ class TextualSummaryResponse(BaseModel):
     mode: str
     tool_data: dict = {}  # Add tool results to the response
 
-@app.post("/diagnose/textual", response_model=TextualSummaryResponse)
+@app.post("/api/diagnose/textual", response_model=TextualSummaryResponse)
 def diagnose_textual(req: DiagnoseRequest, mode: str = "openai"):
     """Diagnose a target and return a textual summary that's easy to read and understand.
     This endpoint is perfect for displaying results in a user-friendly way.
@@ -271,7 +271,7 @@ def diagnose_textual(req: DiagnoseRequest, mode: str = "openai"):
         logger.error(f"Unexpected error in textual diagnose endpoint for {req.target}: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/diagnose/stream")
+@app.post("/api/diagnose/stream")
 def diagnose_streaming(req: DiagnoseRequest, mode: str = "openai"):
     """Stream diagnosis updates in real-time using Server-Sent Events.
     Provides live updates as the AI agent thinks and uses tools.
