@@ -58,8 +58,9 @@ async def root():
     frontend_dir = Path(__file__).parent.parent.parent / "frontend"
     if frontend_dir.exists():
         logger.info(f"Frontend directory exists, contents: {list(frontend_dir.iterdir())}")
-        if (frontend_dir / "dist").exists():
-            logger.info(f"Dist directory exists, contents: {list((frontend_dir / "dist").iterdir())}")
+        dist_dir = frontend_dir / "dist"
+        if dist_dir.exists():
+            logger.info(f"Dist directory exists, contents: {list(dist_dir.iterdir())}")
     
     return {"message": "Frontend not built. Please run 'npm run build' in the frontend directory."}
 
