@@ -32,21 +32,36 @@ if frontend_path.exists():
 @app.get("/")
 async def root():
     """Serve the frontend index.html"""
-    frontend_path = Path(__file__).parent.parent.parent / "frontend" / "dist" / "index.html"
-    logger.info(f"Looking for frontend at: {frontend_path}")
-    logger.info(f"Frontend path exists: {frontend_path.exists()}")
+    # Try multiple possible paths for the frontend
+    possible_paths = [
+        Path(__file__).parent.parent.parent / "frontend" / "dist" / "index.html",
+        Path(__file__).parent.parent.parent / "frontend" / "dist" / "index.html",
+        Path.cwd() / "frontend" / "dist" / "index.html",
+        Path.cwd() / "dist" / "index.html"
+    ]
     
-    if frontend_path.exists():
-        logger.info("Serving frontend index.html")
-        return FileResponse(str(frontend_path))
-    else:
-        logger.warning("Frontend not found, checking if dist directory exists")
-        dist_path = Path(__file__).parent.parent.parent / "frontend" / "dist"
-        if dist_path.exists():
-            logger.info(f"Dist directory exists, contents: {list(dist_path.iterdir())}")
-        else:
-            logger.warning("Dist directory does not exist")
-        return {"message": "Frontend not built. Please run 'npm run build' in the frontend directory."}
+    logger.info(f"Looking for frontend in possible paths:")
+    for path in possible_paths:
+        logger.info(f"  - {path} (exists: {path.exists()})")
+    
+    for frontend_path in possible_paths:
+        if frontend_path.exists():
+            logger.info(f"Serving frontend from: {frontend_path}")
+            return FileResponse(str(frontend_path))
+    
+    # If no frontend found, check what directories exist
+    logger.warning("Frontend not found in any expected location")
+    logger.info(f"Current working directory: {Path.cwd()}")
+    logger.info(f"Current directory contents: {list(Path.cwd().iterdir())}")
+    
+    # Check if frontend directory exists
+    frontend_dir = Path(__file__).parent.parent.parent / "frontend"
+    if frontend_dir.exists():
+        logger.info(f"Frontend directory exists, contents: {list(frontend_dir.iterdir())}")
+        if (frontend_dir / "dist").exists():
+            logger.info(f"Dist directory exists, contents: {list((frontend_dir / "dist").iterdir())}")
+    
+    return {"message": "Frontend not built. Please run 'npm run build' in the frontend directory."}
 
 @app.get("/healthz")
 def health():
