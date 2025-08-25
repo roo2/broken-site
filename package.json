@@ -7,6 +7,6 @@
     "npm": "9.x"
   },
   "scripts": {
-    "heroku-postbuild": "npm ci --prefix frontend && npm run build --prefix frontend"
+    "heroku-postbuild": "cd frontend && npm ci && npm run build"
   }
 }
